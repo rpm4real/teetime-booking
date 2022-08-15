@@ -1,8 +1,12 @@
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 import json 
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 def parse_time(time_text): 
     return datetime.strptime(time_text, "%I:%M %p")
@@ -22,15 +26,13 @@ class TimeElement():
         """
         return self.time_datetime < other.time_datetime
 
-
-
 class TeeTimeBooker(): 
     """
     Main class for booking tee times on the portal, linked from the members website. 
     """
-    main_login_url = main_login_url_config
-    tee_time_url = tee_time_url_config
-    booking_date_url = booking_date_url_config
+    main_login_url = os.getenv("main_login_url_config")
+    tee_time_url = os.getenv("tee_time_url_config")
+    booking_date_url = os.getenv("booking_date_url_config")
     
     def __init__(self, username, password): 
         """
@@ -90,31 +92,20 @@ class TeeTimeBooker():
             self.target_time_element.element.click()
             if fill_tbd: 
                 pass 
-            self.driver.find_element(By.CLASS_NAME, "submit_request_button").click()
+            element_present = EC.presence_of_element_located((By.CLASS_NAME, "submit_request_button")) 
+            WebDriverWait(self.driver, 5).until(element_present).click()
+            #self.driver.find_element(By.CLASS_NAME, "submit_request_button").click()
         except AttributeError: 
             print("No target time set. Set target time before attempting to book")
 
 
+desired_date = datetime(2022,8,19).date()
 
-
-
-
-desired_date = datetime(2022,8,9).date()
-
-booker = TeeTimeBooker(username, password)
+booker = TeeTimeBooker(os.getenv("username"), os.getenv("password"))
 booker.fetch_available_time_elements(desired_date)
 booker.get_available_times()
 
 booker.set_target_time_element("9:00 AM")
 booker.book_time()
-
-booker.valid_time_elements[0].click()
-
-booker.driver.find_element("id","slot_player_row_1").find_element(By.CLASS_NAME,"ftS-playerNameInput").send_keys("test")
-
-
 # do this to close the driver 
 booker.driver.close()
-
-(datetime.strptime("4:30 AM", "%I:%M %p") - datetime.strptime("5:30 AM", "%I:%M %p")) < (datetime.strptime("6:30 AM", "%I:%M %p") - datetime.strptime("5:30 AM", "%I:%M %p"))
-abs(datetime.strptime("6:30 AM", "%I:%M %p") - datetime.strptime("5:30 AM", "%I:%M %p")) > timedelta(minutes=0)
